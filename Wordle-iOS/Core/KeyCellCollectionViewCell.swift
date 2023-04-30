@@ -8,6 +8,8 @@ import UIKit
 class KeyCellCollectionViewCell: UICollectionViewCell {
     static let identifier = "KeyCellCollectionViewCell"
     
+    var isReadOnly = true
+    
     let label: UILabel = {
         let label = UILabel()
         
@@ -33,10 +35,12 @@ class KeyCellCollectionViewCell: UICollectionViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         label.text = nil
+        isReadOnly = true
     }
     
-    func config(letter: Character){
+    func config(letter: Character, _ readOnly: Bool = true){
         label.text = String(letter).uppercased()
+        isReadOnly = readOnly
     }
     
     required init?(coder: NSCoder) {
@@ -45,6 +49,7 @@ class KeyCellCollectionViewCell: UICollectionViewCell {
     
     override var isHighlighted: Bool {
         didSet {
+            guard !isReadOnly else { return }
             UIView.animate(withDuration: 0.2) {
                 if self.isHighlighted {
                     self.transform = .init(scaleX: 0.9, y: 0.9)

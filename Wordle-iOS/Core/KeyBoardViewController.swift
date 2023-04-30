@@ -63,8 +63,10 @@ extension KeyBoardViewController {
             fatalError("can't find KeyCellCollectionViewCell")
         }
         let letter = keys[indexPath.section][indexPath.row]
-        cell.config(letter: letter)
-//        cell.backgroundColor = .clear
+        let uppercasedLetter = Character(String(letter).uppercased())
+        cell.label.textColor = gameStore.state.usedChars.getKeyColor(for: uppercasedLetter)
+        cell.transform = gameStore.state.usedChars.isInvalid(char: uppercasedLetter) ? .init(scaleX: 0.9, y: 0.9) : .identity
+        cell.config(letter: letter, gameStore.state.usedChars.isInvalid(char: uppercasedLetter))
         return cell
     }
     
@@ -93,6 +95,9 @@ extension KeyBoardViewController {
         collectionView.deselectItem(at: indexPath, animated: true)
         
         let char = keys[indexPath.section][indexPath.row]
+        if gameStore.state.usedChars.isInvalid(char: Character(String(char).uppercased())) {
+            return;
+        }
         
         if char == returnKey {
             if gameStore.state.guessState.isRowComplete {
@@ -129,7 +134,7 @@ extension KeyBoardViewController: StoreSubscriber {
     }
     
     func newState(state: GameState) {
-        print("new state: ", state)
+        collectionView.reloadData()
     }
     
     typealias StoreSubscriberStateType = GameState
