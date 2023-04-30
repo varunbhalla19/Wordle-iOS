@@ -42,17 +42,23 @@ struct GuessState: Equatable {
 
 struct UsedChars: Equatable {
     
-    var valid: [Character] = .init()
+    enum State: Equatable { case valid, invalid, optionallyValid }
+    var keyStates: [Character: State] = .init()
     
-    var optionallyValid: [Character] = .init()
+    func isInvalid(char: Character) -> Bool { keyStates[char] == .invalid }
+    func isOptionallyValid(char: Character) -> Bool { keyStates[char] == .optionallyValid }
+    func isValid(char: Character) -> Bool { keyStates[char] == .valid }
     
+    func getKeyColor(for char: Character) -> UIColor {
+        isValid(char: char) ? .systemGreen : isOptionallyValid(char: char) ? .systemOrange : isInvalid(char: char) ? .systemGray : .white
+    }
 }
 
 
 struct GameState: Equatable {
     
     var guessState: GuessState = .init()
-    var currentWord: [Character] = ["W", "O", "R", "S", "T"]
+    var currentWord: [Character] = Array(Words.randomElement()!.uppercased())
     var usedChars: UsedChars = .init()
     
 }
@@ -97,21 +103,25 @@ func UsedCharsReducer(state: GameState) -> UsedChars {
     
     guard let currentGuesses = guessState.guesses[guessState.currentRow], !currentGuesses.isEmpty else { return charState }
     
-    let valid = currentGuesses
+    var currentKeyStates = gameState.usedChars.keyStates
+    
+    currentGuesses
         .enumerated()
-        .filter { charElement in (charElement.element == gameState.currentWord[charElement.offset]) && !charState.valid.contains(charElement.element) }
-        .map(\.element)
-
-    charState.valid += valid
+        .forEach { charElement in
+            let char = charElement.element
+            if gameState.currentWord.contains(charElement.element) {
+                currentKeyStates[char] = .optionallyValid
+            }
+            if charElement.element == gameState.currentWord[charElement.offset] {
+                currentKeyStates[char] = .valid
+            }
+            if (currentKeyStates[char] == .valid) || (currentKeyStates[char] == .optionallyValid) {
+                return
+            }
+            currentKeyStates[char] = .invalid
+        }
     
-    let optionallyValid = currentGuesses
-        .filter { char in gameState.currentWord.contains(char) && !charState.optionallyValid.contains(char) }
-    
-    
-    var result = charState.optionallyValid + optionallyValid
-    result.removeAll { char in charState.valid.contains(char) }
-    
-    charState.optionallyValid = result
+    charState.keyStates = currentKeyStates
     
     print(charState)
     
